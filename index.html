@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RAG Chat</title>
+  <style>
+    body { font-family: Arial; max-width: 700px; margin: 40px auto; }
+    #chat { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto; }
+    .user { font-weight: bold; }
+    .bot { color: green; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>RAG Chatbot</h2>
+
+<div id="chat"></div>
+
+<input id="input" placeholder="Ask something..." style="width:80%">
+<button onclick="send()">Send</button>
+
+<script>
+async function send() {
+  const input = document.getElementById('input');
+  const chat = document.getElementById('chat');
+
+  const question = input.value.trim();
+  if (!question) return;
+
+  chat.innerHTML += `<div class="user">You: ${question}</div>`;
+  input.value = "";
+
+  const res = await fetch("https://santhoshnagaraju.app.n8n.cloud/webhook/rag-chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: question })
+  });
+
+  const data = await res.json();
+  chat.innerHTML += `<div class="bot">Bot: ${data.answer}</div>`;
+  chat.scrollTop = chat.scrollHeight;
+}
+</script>
+
+</body>
+</html>
