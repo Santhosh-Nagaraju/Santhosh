@@ -1,45 +1,97 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>RAG Chat</title>
-  <style>
-    body { font-family: Arial; max-width: 700px; margin: 40px auto; }
-    #chat { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto; }
-    .user { font-weight: bold; }
-    .bot { color: green; margin-bottom: 10px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Chatbot</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="flex flex-col h-screen bg-gray-100">
 
-<h2>RAG Chatbot</h2>
+<header class="bg-indigo-600 text-white text-center py-4 font-bold text-xl">
+  RAG Chatbot
+</header>
 
-<div id="chat"></div>
+<div id="chat" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
 
-<input id="input" placeholder="Ask something..." style="width:80%">
-<button onclick="send()">Send</button>
+<div class="flex p-2 bg-white border-t border-gray-300">
+  <input id="query" type="text" placeholder="Type your message..." class="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+  <button id="sendBtn" class="ml-2 bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700">Send</button>
+</div>
 
 <script>
-async function send() {
-  const input = document.getElementById('input');
-  const chat = document.getElementById('chat');
+const chat = document.getElementById('chat');
+const queryInput = document.getElementById('query');
+const sendBtn = document.getElementById('sendBtn');
+const WEBHOOK_URL = "https://santhoshnagaraju.app.n8n.cloud/webhook/rag-chat";
 
-  const question = input.value.trim();
-  if (!question) return;
+// Load chat history
+let chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+chatHistory.forEach(msg => addMessage(msg.text, msg.sender));
 
-  chat.innerHTML += `<div class="user">You: ${question}</div>`;
-  input.value = "";
-
-  const res = await fetch("https://santhoshnagaraju.app.n8n.cloud/webhook/rag-chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query: question })
-  });
-
-  const data = await res.json();
-  console.log(data);
-  chat.innerHTML += `<div class="bot">Bot: ${data.answer}</div>`;
-  chat.scrollTop = chat.scrollHeight;
+function saveMessage(text, sender) {
+  chatHistory.push({text, sender});
+  localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
 }
+
+function addMessage(text, sender) {
+  const div = document.createElement('div');
+  div.className = `max-w-[70%] px-4 py-2 rounded-2xl break-words ${sender==='user'?'bg-indigo-600 text-white self-end':'bg-gray-200 text-gray-900 self-start'}`;
+  div.textContent = text;
+  div.style.alignSelf = sender==='user'?'flex-end':'flex-start';
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  saveMessage(text, sender);
+}
+
+async function sendMessage() {
+  const question = queryInput.value.trim();
+  if(!question) return;
+
+  addMessage(question, 'user');
+  queryInput.value = '';
+  sendBtn.disabled = true;
+
+  const loadingDiv = document.createElement('div');
+  loadingDiv.className = 'max-w-[70%] px-4 py-2 rounded-2xl bg-gray-200 text-gray-700 self-start';
+  loadingDiv.textContent = '...';
+  chat.appendChild(loadingDiv);
+  chat.scrollTop = chat.scrollHeight;
+
+  try {
+    const res = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({query: question})
+    });
+    const data = await res.json();
+
+    // Simulate typing animation
+    loadingDiv.textContent = '';
+    const answer = data.answer || 'No response';
+    for(let i=0;i<answer.length;i++){
+      loadingDiv.textContent += answer[i];
+      await new Promise(r=>setTimeout(r, 15)); // 15ms per character
+    }
+    saveMessage(answer, 'bot');
+
+  } catch(err) {
+    console.error(err);
+    loadingDiv.textContent = 'Failed to get response.';
+    saveMessage('Failed to get response.', 'bot');
+  } finally {
+    sendBtn.disabled = false;
+    queryInput.focus();
+  }
+}
+
+// Send message on button click
+sendBtn.addEventListener('click', sendMessage);
+
+// Send message on Enter key
+queryInput.addEventListener('keypress', (e)=>{
+  if(e.key==='Enter') sendMessage();
+});
 </script>
 
 </body>
