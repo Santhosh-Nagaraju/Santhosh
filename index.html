@@ -36,7 +36,7 @@ async function send() {
   });
 
   const data = await res.json();
-  chat.innerHTML += `<div class="bot">Bot: ${data.answer}</div>`;
+  chat.innerHTML += `<div class="bot">Bot: ${data.output}</div>`;
   chat.scrollTop = chat.scrollHeight;
 }
 </script>
