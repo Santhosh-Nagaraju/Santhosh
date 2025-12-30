@@ -29,7 +29,7 @@ async function send() {
   chat.innerHTML += `<div class="user">You: ${question}</div>`;
   input.value = "";
 
-  const res = await fetch("https://santhoshnagaraju.app.n8n.cloud/webhook-test/rag-chat", {
+  const res = await fetch("https://santhoshnagaraju.app.n8n.cloud/webhook/rag-chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query: question })
